@@ -2,6 +2,8 @@
 
 #include "OpenDoor.h"
 #include "GameFramework/Actor.h"
+//#include "GameFramework/PlayerController.h"
+#include "Engine/World.h"
 
 // Sets default values for this component's properties
 UOpenDoor::UOpenDoor()
@@ -18,12 +20,20 @@ UOpenDoor::UOpenDoor()
 void UOpenDoor::BeginPlay()
 {
 	Super::BeginPlay();
+	//OpenDoor();
+	ActorThatOpens = GetWorld()->GetFirstPlayerController()->GetPawn();
+	//Pawn inherits from AActor, which means pawn "is a" actor
+	//Pawn is in derived class, AActor is base class?
+}
+
+void UOpenDoor::OpenDoor()
+{
 
 	AActor* Owner = GetOwner();//Find the owning actor
 
-	//Make a rotator
-	FRotator NewRotation = FRotator(0.0f,-60.0f,0.0f);//FRotator is a struct
-	//Set the door rotation
+							   //Make a rotator
+	FRotator NewRotation = FRotator(0.0f, -60.0f, 0.0f);//FRotator is a struct
+														//Set the door rotation
 	Owner->SetActorRotation(NewRotation);
 }
 
@@ -33,6 +43,12 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	//Poll trigger volume
+	if(PressurePlate->IsOverlappingActor(ActorThatOpens))//pressureplate's type is ATriggerVolume, which is a pointer, IsOverlappingActor is a bool var
+	// if the ActorThatOpens is in the volume
+	{
+		OpenDoor();
+	}
+	
 }
 
