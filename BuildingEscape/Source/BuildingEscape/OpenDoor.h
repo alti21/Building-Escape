@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-
+#include "Classes/Components/PrimitiveComponent.h"
 #include "Engine/TriggerVolume.h"
 #include "OpenDoor.generated.h"
 
@@ -40,6 +40,9 @@ private:
 	
 	float LastDoorOpenTime;
 	//UPROPERTY(EditAnywhere)
-	AActor* ActorThatOpens; //pawn inherites from actor
+	//AActor* ActorThatOpens; //pawn inherites from actor
 	AActor* Owner; //the owning door
+
+	// Returns total mass in kg
+	float GetTotalMassOfActorsOnPlate();
 };

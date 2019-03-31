@@ -33,12 +33,9 @@ void UGrabber::FindPhysicsHandleComponent()
 	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
 	//GetOwner() get's the owner and FindComponentByClass looks down the owner (i.e., the default pawn/player components)
 	//and looks for the component of type UphysicsHandleComponent, which is the PhysicsHandle
-	if (PhysicsHandle)
+	if (PhysicsHandle == nullptr)
 	{
-		//Physics handle is found
-	}
-	else
-	{
+		//Physics handle is not found
 		UE_LOG(LogTemp, Error, TEXT("%s missing physics handle component"), *(GetOwner()->GetName()))
 	}
 }
@@ -53,9 +50,9 @@ void UGrabber::SetupInputComponent()
 	if (InputComponent)
 	{
 		//InputComponent is found
-		UE_LOG(LogTemp, Warning, TEXT("Input component found"))
+		//UE_LOG(LogTemp, Warning, TEXT("Input component found"))
 			// Bind the input axis, this pointer is a reference to the grabber component itself
-			InputComponent->BindAction("Grab", IE_Pressed, this, &UGrabber::Grab);
+		InputComponent->BindAction("Grab", IE_Pressed, this, &UGrabber::Grab);
 		//here we are binding any key that maps to "Grab" (under project settings/input/action mappings), when key is pressed, we look at "this", which is 
 		//the Grabber then we look for a method called Grab, Grab function is called when we push the key(s)
 		InputComponent->BindAction("Grab", IE_Released, this, &UGrabber::Release);
@@ -74,20 +71,13 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// Get Player view point this tick
-	FVector PlayerViewPointLocation;
-	FRotator PlayerViewPointRotation;
-	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(//OUT is a macro
-		OUT PlayerViewPointLocation,
-		OUT PlayerViewPointRotation
-	);//for now, OUT does nothing. 
-
-	FVector LineTraceEnd = PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;//use this for reaching and grabbing chair?
+	
+//	FVector LineTraceEnd = PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;//use this for reaching and grabbing chair?
 
 	//if the physics handle is attached
 	if (PhysicsHandle->GrabbedComponent)
 	{//move object that we are holding
-		PhysicsHandle->SetTargetLocation(LineTraceEnd);
+		PhysicsHandle->SetTargetLocation(GetReachLineEnd());
 	}
 		
 
@@ -96,17 +86,19 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 
 void UGrabber::Grab()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Grab pressed"))
 
 	//Line trace and see if we reach any actors with physics body collision set
 	auto HitResult = GetFirstPhysicsBodyInReach();
+	//GetComponent() is a member of struct HitResult
 	auto ComponentToGrab = HitResult.GetComponent();//GetComponent is of type UPrimitiveComponent, which is what we need in PhysicsHandle->GrabComponent(...)
+	//left side: type is UPrimitiveComponent, same as right side
+
 	auto ActorHit = HitResult.GetActor();
 
 	//if we hit something attach a physics handle
 	if (ActorHit)
 	{
-		// TODO attach physics handle
+		// attach physics handle
 		PhysicsHandle->GrabComponent(
 			ComponentToGrab,
 			NAME_None,
@@ -119,21 +111,13 @@ void UGrabber::Grab()
 
 void UGrabber::Release()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Grab released"))
 		PhysicsHandle->ReleaseComponent();
 }
 
 const FHitResult UGrabber::GetFirstPhysicsBodyInReach()
 {
 	// Get Player view point this tick
-	FVector PlayerViewPointLocation;
-	FRotator PlayerViewPointRotation;
-	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(//OUT is a macro
-		OUT PlayerViewPointLocation,
-		OUT PlayerViewPointRotation
-	);//for now, OUT does nothing. 
-
-	FVector LineTraceEnd = PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;//use this for reaching and grabbing chair?
+	
 	// Draw a red trace in the world to visualize grabber reach
 	//DrawDebugLine(
 	//	GetWorld(),
@@ -153,23 +137,44 @@ const FHitResult UGrabber::GetFirstPhysicsBodyInReach()
 		//hit to be ourself
 	);
 	// Line trace (ray-cast) out to reach distance, objectType because physicsBody is the objectType
-	FHitResult Hit;
+	FHitResult HitResult;
 	GetWorld()->LineTraceSingleByObjectType(
-		OUT Hit,
-		PlayerViewPointLocation,
-		LineTraceEnd,
+		OUT HitResult,
+		GetReachLineStart(),
+		GetReachLineEnd(),
 		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),//use :: to access enum members
 		TraceParameters
 	);
 
-	// See what we hit
-	AActor* ActorHit = Hit.GetActor();
-	if (ActorHit)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Line trace hit %s"), *(ActorHit->GetName()));
-	}//when moving around, if you hit the table or chair, this will be written to console
 
 
-	return Hit;
+	return HitResult;
+}
+
+FVector UGrabber::GetReachLineStart()
+{
+	// Get Player view point this tick
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(//OUT is a macro
+		OUT PlayerViewPointLocation,
+		OUT PlayerViewPointRotation
+	);//for now, OUT does nothing. 
+
+	return PlayerViewPointLocation;
+}
+
+FVector UGrabber::GetReachLineEnd()
+{
+	// Get Player view point this tick
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(//OUT is a macro
+		OUT PlayerViewPointLocation,
+		OUT PlayerViewPointRotation
+	);//for now, OUT does nothing. 
+
+	return PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;//use this for reaching and grabbing chair?
+
 }
 
