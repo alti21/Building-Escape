@@ -73,7 +73,10 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 
 	
 //	FVector LineTraceEnd = PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;//use this for reaching and grabbing chair?
-
+	if (!PhysicsHandle)
+	{
+		return;
+	}
 	//if the physics handle is attached
 	if (PhysicsHandle->GrabbedComponent)
 	{//move object that we are holding
@@ -98,6 +101,10 @@ void UGrabber::Grab()
 	//if we hit something attach a physics handle
 	if (ActorHit)
 	{
+		if (!PhysicsHandle)
+		{
+			return;
+		}
 		// attach physics handle
 		PhysicsHandle->GrabComponent(
 			ComponentToGrab,
@@ -111,6 +118,10 @@ void UGrabber::Grab()
 
 void UGrabber::Release()
 {
+	if (!PhysicsHandle)
+	{
+		return;
+	}
 		PhysicsHandle->ReleaseComponent();
 }
 

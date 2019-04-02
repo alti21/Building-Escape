@@ -22,33 +22,15 @@ void UOpenDoor::BeginPlay()
 	Super::BeginPlay();
 	//OpenDoor();
 	Owner = GetOwner();
-
+	if (!PressurePlate)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s missing pressure plate"), *(GetOwner()->GetName()))
+	}
 	//ActorThatOpens = GetWorld()->GetFirstPlayerController()->GetPawn();
 	//Pawn inherits from AActor, which means pawn "is a" actor
 	//Pawn is in derived class, AActor is base class?
 }
 
-void UOpenDoor::OpenDoor()
-{
-
-	//AActor* Owner = GetOwner();//Find the owning actor
-
-							   //Make a rotator
-	//FRotator NewRotation = FRotator(0.0f, -60.0f, 0.0f);//FRotator is a struct
-														//Set the door rotation
-	Owner->SetActorRotation(FRotator(0.0f, OpenAngle, 0.0f));
-}
-
-void UOpenDoor::CloseDoor()
-{
-
-	//AActor* Owner = GetOwner();//Find the owning actor
-
-							   //Make a rotator
-	//FRotator NewRotation = FRotator(0.0f, -60.0f, 0.0f);//FRotator is a struct
-														//Set the door rotation
-	Owner->SetActorRotation(FRotator(0.0f, -90.0f, 0.0f));
-}
 
 // Called every frame
 void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -58,15 +40,16 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 	//Poll trigger volume
 	//if(PressurePlate->IsOverlappingActor(ActorThatOpens))//pressureplate's type is ATriggerVolume, which is a pointer, IsOverlappingActor is a bool var
 	// if the ActorThatOpens is in the volume
-	if(GetTotalMassOfActorsOnPlate() > 30.0f)
+	if(GetTotalMassOfActorsOnPlate() > TriggerMass)
 	{
-		OpenDoor();
-		LastDoorOpenTime = GetWorld()->GetTimeSeconds();//store time when door is opened
+		OnOpen.Broadcast();//open door? using door event blueprint!
+	//	LastDoorOpenTime = GetWorld()->GetTimeSeconds();//store time when door is opened
 	}
 	//time in seconds since world was brought up for play
-	if (GetWorld()->GetTimeSeconds() - LastDoorOpenTime > DoorCloseDelay)
+	else
 	{//if difference between current time and the exact time the door was opened is more than door close delay
-		CloseDoor();//close door after some time has passed
+		//CloseDoor();//close door after some time has passed
+		OnClose.Broadcast();
 	}
 	//check if it's time to close the door
 
@@ -78,6 +61,7 @@ float UOpenDoor::GetTotalMassOfActorsOnPlate()
 
 	//Find all the overlapping actors
 	TArray<AActor*> OverlappingActors;
+	if (!PressurePlate) { return TotalMass; }
 	PressurePlate->GetOverlappingActors(OUT OverlappingActors);//it is an OUT parameter because it's a reference?
 	//Iterate through them adding up their masses together
 	for (const auto *Actor : OverlappingActors)
