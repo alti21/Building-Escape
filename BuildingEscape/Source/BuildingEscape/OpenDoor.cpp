@@ -63,7 +63,7 @@ float UOpenDoor::GetTotalMassOfActorsOnPlate()
 	TArray<AActor*> OverlappingActors;
 	if (!PressurePlate) { return TotalMass; }
 	PressurePlate->GetOverlappingActors(OUT OverlappingActors);//it is an OUT parameter because it's a reference?
-	//Iterate through them adding up their masses together
+	//Iterate through them adding up their masses together, i.e. add up masses of table and chair
 	for (const auto *Actor : OverlappingActors)
 	{
 		TotalMass += Actor->FindComponentByClass<UPrimitiveComponent>()->GetMass();
